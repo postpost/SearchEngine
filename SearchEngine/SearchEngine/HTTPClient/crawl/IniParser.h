@@ -20,10 +20,6 @@ class IniParser {
 public:
 	IniParser(std::string iniFileName);
 	~IniParser();
-
-	//data to start crawling
-	std::string startWebPage;
-	int recursionDepth;
 	
 	void ParseIniFile();
 	void PrintConfigData();

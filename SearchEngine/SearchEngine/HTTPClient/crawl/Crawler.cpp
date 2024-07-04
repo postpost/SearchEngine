@@ -6,7 +6,6 @@
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <fstream>
-#include <iostream>
 
 #include <iterator>
 #include <regex>
