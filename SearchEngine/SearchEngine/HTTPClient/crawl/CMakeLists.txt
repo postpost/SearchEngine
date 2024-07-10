@@ -7,6 +7,21 @@ project(crawl)
 set(SOURCES_FILE crawl.cpp Crawler.h Crawler.cpp Indexer.h Indexer.cpp IniParser.h IniParser.cpp)
 add_executable(${PROJECT_NAME} ${SOURCES_FILE})
 
+#OpenSSL
+find_package(OpenSSL REQUIRED)
+if (OpenSSL_FOUND)
+ # Add the static lib for linking
+ # target_link_libraries(${PROJECT_NAME} ${OPENSSL_LIBRARIES}) #OpenSSL::SSL OpenSSL::Crypto
+  
+ message(STATUS "Found OpenSSL ${OPENSSL_VERSION}")
+
+else()
+
+  message(STATUS "OpenSSL Not Found")
+
+endif()
+
+
 #add files
 file(GLOB MY_FILES "*.txt" "*.ini") 
 file(COPY ${MY_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
@@ -25,6 +40,7 @@ target_include_directories(${PROJECT_NAME}
 				$<INSTALL_INTERFACE:include>
 				$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 				${Boost_INCLUDE_DIRS}
+				${OPENSSL_INCLUDE_DIR}
 			PRIVATE
 )
 
@@ -32,7 +48,11 @@ target_link_libraries(${PROJECT_NAME}
 			PUBLIC
 				pqxx
 				${Boost_LIBRARIES}
+				${OPENSSL_LIBRARIES}
 )
+
+#add subdirectory for HTML Database
+add_subdirectory(HTMLDB)
 
 cmake_policy(SET CMP0074 NEW)
 
