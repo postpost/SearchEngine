@@ -13,6 +13,9 @@ struct DatabaseConnection {
 
 struct CrawlerData {
 	std::string _startWeb;
+	std::string _port;
+	std::string _url;
+	std::string _target;
 	int	_recursionDepth;
 };
 

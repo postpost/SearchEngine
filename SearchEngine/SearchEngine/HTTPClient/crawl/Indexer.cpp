@@ -3,7 +3,7 @@
 
 Indexer::Indexer()
 {
-	_sign_regex = std::regex("<.*?>|\W"); //  ; <[^>]*> |\W/gx; <.*?>|\W
+	_sign_regex = std::regex("<.*?>|[^\\w\\s]"); 
 }
 
 void Indexer::CleanText(std::string& txtToClean)
@@ -13,7 +13,7 @@ void Indexer::CleanText(std::string& txtToClean)
 	fout << newStr;
 	fout.close();
 
-	std::cout << "Result string: \"" << newStr << "\"\n";
+	//std::cout << "Result string: \"" << newStr << "\"\n";
 }
 
 
