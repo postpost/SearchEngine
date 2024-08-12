@@ -5,7 +5,7 @@ set (PostgreSQL_ADDITIONAL_VERSIONS 16)
 project(crawl)
 
 set(SOURCES_FILE crawl.cpp Crawler.h Crawler.cpp Indexer.h Indexer.cpp IniParser.h IniParser.cpp)
-add_executable(${PROJECT_NAME} ${SOURCES_FILE})
+add_executable(${PROJECT_NAME} ${SOURCES_FILE} "DataBaseManager.h" "DataBaseManager.cpp")
 
 #OpenSSL
 find_package(OpenSSL REQUIRED)
@@ -32,6 +32,15 @@ file(COPY config.ini
 add_subdirectory("C:/Program Files/libpqxx-7.8.1" libpqxx-build)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
+target_compile_definitions(${PROJECT_NAME}
+  PUBLIC
+    BOOST_LOCALE_NO_LIB
+  PRIVATE
+    BOOST_LOCALE_SOURCE
+    _CRT_SECURE_NO_WARNINGS
+    _SCL_SECURE_NO_WARNINGS
+)
+
 #BOOST LIBS
 find_package(Boost 1.82.00 REQUIRED)
 
@@ -40,6 +49,7 @@ target_include_directories(${PROJECT_NAME}
 				$<INSTALL_INTERFACE:include>
 				$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 				${Boost_INCLUDE_DIRS}
+				Boost::assert
 				${OPENSSL_INCLUDE_DIR}
 			PRIVATE
 )
@@ -50,6 +60,10 @@ target_link_libraries(${PROJECT_NAME}
 				${Boost_LIBRARIES}
 				${OPENSSL_LIBRARIES}
 )
+
+#Boost Locale
+
+
 
 #add subdirectory for HTML Database
 add_subdirectory(HTMLDB)

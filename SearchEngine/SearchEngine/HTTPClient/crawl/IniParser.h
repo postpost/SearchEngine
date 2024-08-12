@@ -31,6 +31,7 @@ public:
 	std::string GetPort();
 	std::string GetDBName();
 	std::string GetUser();
+	std::string GetPassword();
 	std::string GetStartWebPage();
 	int GetRecursionDepth();
 

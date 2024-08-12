@@ -27,6 +27,13 @@ public:
 	void CleanHTML(std::string& fileToClean);
 	std::string GetHTMLContentFileName();
 
+	void SaveLowerCaseFile();
+	void CountWords();
+
+	void PrintCountedWords();
+
+	//connection to DB via Indexer
+	void ConnectToDB();
 
 public:
 	//Fields
@@ -40,7 +47,7 @@ private:
 	std::string _urlString;
 	int _recursionDepth;
 
-	IniParser* _IniParser = nullptr;
+	std::shared_ptr<IniParser> _IniParser = nullptr;
 	Indexer* _indexer = nullptr;
 
 	std::string _file = "HTMLResponse.html";

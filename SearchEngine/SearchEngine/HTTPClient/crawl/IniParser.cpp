@@ -56,6 +56,31 @@ void IniParser::PrintConfigData()
 		<< "recursion depth: " << dataToCrawl._recursionDepth << '\n';
 }
 
+std::string IniParser::GetHost()
+{
+	return dataToConnect._host;
+}
+
+std::string IniParser::GetPort()
+{
+	return dataToConnect._port;
+}
+
+std::string IniParser::GetDBName()
+{
+	return dataToConnect._dbname;
+}
+
+std::string IniParser::GetUser()
+{
+	return dataToConnect._user;
+}
+
+std::string IniParser::GetPassword()
+{
+	return dataToConnect._password;
+}
+
 std::string IniParser::GetStartWebPage()
 {
 	return dataToCrawl._startWeb;

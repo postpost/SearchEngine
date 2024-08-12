@@ -29,16 +29,20 @@ namespace net = boost::asio;    // from <boost/asio.hpp>
 namespace ssl = net::ssl;       // from <boost/asio/ssl.hpp>
 using tcp = net::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
+
+
+std::recursive_mutex rm;
+
 Crawler::Crawler(std::string fileName)
 {
-	_IniParser = new IniParser(fileName);
+	_IniParser = std::make_shared<IniParser>(fileName);
 	_IniParser->ParseIniFile();
 	
 	_urlString =_IniParser->GetStartWebPage();
 	DownloadURLs(_urlString);
 
 	//Indexer
-	_indexer = new Indexer;
+	_indexer = new Indexer(_IniParser);
 
 	//_self_regex = std::regex("<a href=\"(.*?)\"", std::regex_constants::ECMAScript | std::regex_constants::icase);
 	_self_regex = std::regex("\\b((?:https?|ftp|file):"
@@ -49,12 +53,12 @@ Crawler::Crawler(std::string fileName)
 
 Crawler::~Crawler()
 {
-	delete _IniParser;
+	//delete _IniParser;
 	delete _indexer;
 }
 
 void Crawler::DownloadURLs(const std::string& url)
-{
+{	
 	URLComponents startWeb;
 	ParseURL(url, startWeb);
 	DownloadWebPage(startWeb);
@@ -63,8 +67,8 @@ void Crawler::DownloadURLs(const std::string& url)
 int Crawler::DownloadWebPage(URLComponents& urlFields)
 {
 	try {
+		std::lock_guard guard(rm);
 		net::io_context ioc;
-
 		ssl::context ctx{ boost::asio::ssl::context::sslv23_client };
 		ctx.set_default_verify_paths();
 
@@ -164,7 +168,7 @@ std::unordered_set<std::string> Crawler::GetHTMLLinks()
 	if (_urls.size() == 0) {
 		std:: cout << "-1" << std::endl;
 	}
-
+	fin.close();
 	return _urls;
 }
 
@@ -179,7 +183,8 @@ int Crawler::GetURLCount(std::unordered_set<std::string>& urls)
 
 void Crawler::ParseURL(const std::string& urlStr, URLComponents& urlFields)
 {
-	int pos = urlStr.find(':');
+	std::lock_guard guard(rm);
+	size_t pos = urlStr.find(':');
 	urlFields.protocol = urlStr.substr(0, pos);
 	
 	pos = urlStr.find('/');
@@ -201,6 +206,7 @@ void Crawler::PrintCertificate(ssl::verify_context& ctx)
 
 void Crawler::ReadStatusLineHandler(const boost::system::error_code& err)
 {
+	//std::lock_guard guard(rm);
 	std::cout << "READ STATUS LINE\n";
 	std::ifstream response_stream(_file);
 		std::string http_version;
@@ -228,10 +234,12 @@ void Crawler::ReadStatusLineHandler(const boost::system::error_code& err)
 	//method to read headers
 	ReadHeaderHandler(err, response_stream);
 	SaveContent(err, response_stream);
+	response_stream.close();
 }
 
 void Crawler::ReadHeaderHandler(const boost::system::error_code& err, std::ifstream& response_stream)
 {
+	//std::lock_guard guard(rm);
 	std::cerr << "Read Headers...\n";
 	if (_statusCode == 200) {
 		std::string header;
@@ -255,27 +263,28 @@ void Crawler::SaveContent(const boost::system::error_code& err, std::ifstream& r
 	DefineFileName(time);
 	 
 	std::ofstream fout(_HTMLContentFile);
-	std::string content;
-	std::string htmlCursor = "<";
+	if (fout.is_open()) {
+		std::string content;
+		std::string htmlCursor = "<";
 
-	std::getline(response_stream, content); //убирает первую строку (появляется в www.google.com)
+		std::getline(response_stream, content); //убирает первую строку (появляется в www.google.com)
 	
-	if (content.find_first_not_of(htmlCursor)) {
-		content.erase(0, '\n');
-	}
+		if (content.find_first_not_of(htmlCursor)) {
+			content.erase(0, '\n');
+		}
 
-	while (std::getline(response_stream, content)) {
-		fout << content;
+		while (std::getline(response_stream, content)) {
+			fout << content;
+		}
 	}
 	
-	response_stream.close();
 	fout.close();
 }
 
 std::string Crawler::DefineFileName(std::string& timeStr)
 {
 	++count;
-	_HTMLContentFile = ".\\HTMLDB\\HTMLContent_" + std::to_string(count) + "_" + timeStr + ".html";
+	_HTMLContentFile = ".\\HTMLDownloaded\\HTMLContent_" + std::to_string(count) + "_" + timeStr + ".html";
 	return _HTMLContentFile;
 
 }
@@ -306,4 +315,32 @@ void Crawler::CleanHTML(std::string& fileToClean)
 std::string Crawler::GetHTMLContentFileName()
 {
 	return _HTMLContentFile;
+}
+
+void Crawler::SaveLowerCaseFile()
+{
+	if (_indexer) {
+		_indexer->ConvertToLowerCase();
+	}
+}
+
+void Crawler::CountWords()
+{
+	if (_indexer) {
+		_indexer->CountWords();
+	}
+}
+
+void Crawler::PrintCountedWords()
+{
+	if (_indexer) {
+		_indexer->PrintCountedWords();
+	}
+}
+
+void Crawler::ConnectToDB()
+{
+	if (_indexer) {
+		_indexer->ConnectToDB();
+	}
 }
