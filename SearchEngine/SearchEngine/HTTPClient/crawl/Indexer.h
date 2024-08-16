@@ -7,6 +7,7 @@
 class Indexer {
 public:
 	Indexer(std::shared_ptr<IniParser> parser);
+	~Indexer();
 	void CleanText(std::string& txtToClean);
 	void ConvertToLowerCase();
 
@@ -15,7 +16,6 @@ public:
 	void PrintCountedWords();
 
 	//connect to DB
-	void ConnectToDB();
 	void AddToDataBase();
 
 private:

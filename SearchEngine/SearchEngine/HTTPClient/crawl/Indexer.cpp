@@ -9,6 +9,11 @@ Indexer::Indexer(std::shared_ptr<IniParser> parser): _parser(parser)
 	_sign_regex = std::regex("<.*?>|[^\\w\\s]"); 
 }
 
+Indexer::~Indexer()
+{
+	delete _DBManager;
+}
+
 void Indexer::CleanText(std::string& txtToClean)
 {
 	std::ofstream fout(_cleanedHTML);
@@ -62,6 +67,7 @@ std::map<std::string, int> Indexer::CountWords()
 		++wordFreq[*itr];
 	}
 	CleanMap(wordFreq);
+	//PrintCountedWords();
 	return _countedWords;
 }
 
@@ -74,11 +80,12 @@ void Indexer::PrintCountedWords()
 	}
 }
 
-void Indexer::ConnectToDB()
+void Indexer::AddToDataBase()
 {
 	_DBManager = new DataBaseManager(_parser);
-	_DBManager->ConnectToDB();
+	_DBManager->AddToDB(_countedWords, _lowerCaseFile);
 }
+
 
 std::string Indexer::DefineFileName()
 {
@@ -100,10 +107,11 @@ void Indexer::SaveToFile(std::string& text)
 
 void Indexer::CleanMap(std::map <std::string, int>& container)
 {
+	_countedWords.clear();
 	auto itr = container.begin();
 	for (; itr != container.end(); ++itr) {
-		if (itr->first.size() >= 3 || itr->first.size() <= 32) {
-			//std::cout << itr->first << std::endl;
+		//std::cerr << itr->first.length() << std::endl;
+		if (itr->first.length() >= 3 && itr->first.length() <= 32) {
 			_countedWords.insert(std::pair(itr->first, itr->second));
 		}
 	}

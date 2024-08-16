@@ -338,9 +338,10 @@ void Crawler::PrintCountedWords()
 	}
 }
 
-void Crawler::ConnectToDB()
+void Crawler::AddToDB()
 {
 	if (_indexer) {
-		_indexer->ConnectToDB();
+		_indexer->AddToDataBase();
 	}
 }
+

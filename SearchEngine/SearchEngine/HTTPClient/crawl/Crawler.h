@@ -33,7 +33,7 @@ public:
 	void PrintCountedWords();
 
 	//connection to DB via Indexer
-	void ConnectToDB();
+	void AddToDB();
 
 public:
 	//Fields

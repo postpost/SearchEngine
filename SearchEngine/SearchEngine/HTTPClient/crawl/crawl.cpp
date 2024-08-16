@@ -17,11 +17,9 @@
 using namespace boost::locale;
 
 int main(int argc, char* argv[]) {
-	setlocale(LC_ALL, "Russian");
+	
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
-
-	setvbuf(stdout, nullptr, _IOFBF, 1000);
 
 	std::string iniFileName = "config.ini";
 	std::unordered_set<std::string> urls;
@@ -66,7 +64,7 @@ int main(int argc, char* argv[]) {
 	crawler.CountWords();
 	//crawler.PrintCountedWords();
 
-	crawler.ConnectToDB();
+	crawler.AddToDB();
 	
 	return 0;
 }
