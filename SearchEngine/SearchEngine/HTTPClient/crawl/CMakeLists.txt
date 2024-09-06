@@ -67,6 +67,7 @@ target_link_libraries(${PROJECT_NAME}
 
 #add subdirectory for HTML Database
 add_subdirectory(HTMLDB)
+add_subdirectory(HTMLDownloaded)
 
 cmake_policy(SET CMP0074 NEW)
 

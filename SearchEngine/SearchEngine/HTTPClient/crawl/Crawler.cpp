@@ -35,20 +35,30 @@ std::recursive_mutex rm;
 
 Crawler::Crawler(std::string fileName)
 {
-	_IniParser = std::make_shared<IniParser>(fileName);
-	_IniParser->ParseIniFile();
-	
-	_urlString =_IniParser->GetStartWebPage();
-	DownloadURLs(_urlString);
-
-	//Indexer
-	_indexer = new Indexer(_IniParser);
-
 	//_self_regex = std::regex("<a href=\"(.*?)\"", std::regex_constants::ECMAScript | std::regex_constants::icase);
 	_self_regex = std::regex("\\b((?:https?|ftp|file):"
 							 "\\/\\/[a-zA-Z0-9+&@#\\/%?=~_|!:,.;]*"
 							 "[a-zA-Z0-9+&@#\\/%=~_|])", 
 							 std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+	_IniParser = std::make_shared<IniParser>(fileName);
+	_IniParser->ParseIniFile();
+	
+	_urlString =_IniParser->GetStartWebPage();
+	_recursionCount = 0;
+	_recursionDepth =_IniParser->GetRecursionDepth();
+
+	net::io_context ioc; //shared_ptr?
+	DownloadStartWeb(_urlString, ioc);
+	GetHTMLLinks();
+
+	if (_recursionDepth > 0) {
+		DownloadURLs(ioc);
+	}
+
+	//Indexer
+	_indexer = new Indexer(_IniParser);
+
 }
 
 Crawler::~Crawler()
@@ -57,18 +67,61 @@ Crawler::~Crawler()
 	delete _indexer;
 }
 
-void Crawler::DownloadURLs(const std::string& url)
-{	
-	URLComponents startWeb;
-	ParseURL(url, startWeb);
-	DownloadWebPage(startWeb);
+void Crawler::DownloadURLs(boost::asio::io_context& ioc)
+{
+		std::vector<URLComponents*> urlComponentList;
+		std::vector <std::string> urlList;
+
+		for (int i = 0; i < GetRecursionDepth(); ++i) {
+			urlComponentList.push_back(new URLComponents);
+		}
+
+		for (auto& el : _urls) {
+			urlList.push_back(el);
+		}
+
+		//1) pasing
+		for (int i = 0; i < GetRecursionDepth(); ++i) {
+			ioc.post([this, i, &urlList, &urlComponentList, &ioc]() {
+								HandleThreadPoolTask(urlList[i], urlComponentList[i], ioc);
+								}); //&Crawler::
+		
+		}
+
+		for (int i = 0; i < GetCoresCount(); ++i) {
+			_threadPool.emplace_back([&ioc]() { ioc.run(); });
+		}
+
+		for (auto& thread : _threadPool) {
+			thread.join();
+		}
 }
 
-int Crawler::DownloadWebPage(URLComponents& urlFields)
+void Crawler::DownloadStartWeb(const std::string url, boost::asio::io_context& ioc)
+{
+	URLComponents startWeb;
+	ParseURL(url, &startWeb);
+	if (startWeb.protocol == "https")
+		GetHTTPS(&startWeb, ioc);
+	else if (startWeb.protocol == "http")
+		GetHTTP(&startWeb, ioc);
+}
+
+void Crawler::HandleThreadPoolTask(const std::string& urlStr, URLComponents* urlFields, boost::asio::io_context& ioc)
+{
+	ParseURL(urlStr, urlFields);
+	if (urlFields->protocol == "https") {
+		GetHTTPS(urlFields, ioc);
+	}
+	else {
+		GetHTTP(urlFields, ioc);
+	}
+}
+
+int Crawler::GetHTTPS(URLComponents* urlFields, boost::asio::io_context& ioc)
 {
 	try {
-		std::lock_guard guard(rm);
-		net::io_context ioc;
+		//net::io_context ioc;
 		ssl::context ctx{ boost::asio::ssl::context::sslv23_client };
 		ctx.set_default_verify_paths();
 
@@ -78,15 +131,15 @@ int Crawler::DownloadWebPage(URLComponents& urlFields)
 		//beast::ssl_stream<beast::tcp_stream> stream{ ioc, ctx };
 
 		//Look up domain name
-		auto const results = resolver.resolve(urlFields.hostname, urlFields.protocol);
-		
+		auto const results = resolver.resolve(urlFields->hostname, urlFields->protocol);
+
 		//Connect on the IP from looking up
 		//beast::get_lowest_layer(stream).connect(results);
 
 		//SSL_set_tlsext_host_name(stream.native_handle(), _urlFields.hostname.c_str());
 
 		// Set SNI Hostname (many hosts need this to handshake successfully)
-		if (!SSL_set_tlsext_host_name(stream.native_handle(), urlFields.hostname.c_str()))
+		if (!SSL_set_tlsext_host_name(stream.native_handle(), urlFields->hostname.c_str()))
 		{
 			boost::system::error_code ec{ static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category() };
 			throw boost::system::system_error{ ec };
@@ -98,8 +151,8 @@ int Crawler::DownloadWebPage(URLComponents& urlFields)
 		stream.handshake(ssl::stream_base::client);
 
 		//Set up GET request
-		http::request<http::string_body> req{ http::verb::get, urlFields.path, urlFields.version };
-		req.set(http::field::host, urlFields.hostname);
+		http::request<http::string_body> req{ http::verb::get, urlFields->path, urlFields->version };
+		req.set(http::field::host, urlFields->hostname);
 		req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
 
 		//Send HTTP req
@@ -116,7 +169,7 @@ int Crawler::DownloadWebPage(URLComponents& urlFields)
 		http::read(stream, _buffer, _response);
 
 		//Write the message to .html
-		
+
 		std::ofstream fout(_file);
 
 		fout << _response;
@@ -150,9 +203,62 @@ int Crawler::DownloadWebPage(URLComponents& urlFields)
 
 }
 
+int Crawler::GetHTTP(URLComponents* urlFields, boost::asio::io_context& ioc)
+{
+	try {
+		//std::shared_ptr<net::io_context> _ioc;
+		net::io_context _ioc;
+		tcp::socket socket{ _ioc };
+		tcp::resolver resolver{ _ioc };
+
+		auto const results = resolver.resolve(urlFields->hostname, urlFields->protocol);
+
+		boost::asio::connect(socket, results.begin(), results.end());
+
+		//prepare HTTP request
+		http::request<http::string_body> request{ http::verb::get, urlFields->path, urlFields->version};
+		request.set(http::field::host, urlFields->hostname);
+		request.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+
+		//SEND REQUEST TO THE REMOTE HOST
+		http::write(socket, request);
+
+		//READ REQUEST
+		boost::beast::flat_buffer buffer; //to read response
+		http::response<http::dynamic_body>response; //container to store response
+
+		//ERROR-------------->
+		http::read(socket, buffer, response);
+
+		//READ IN OUT
+		std::stringstream stream;
+		stream << response;
+	
+		//CLOSE SOCKET
+		boost::system::error_code error;
+		ReadStatusLineHandlerHTTP(stream,error);
+		socket.shutdown(tcp::socket::shutdown_both, error);
+
+		if (error && error != boost::system::errc::not_connected)
+			throw boost::system::system_error{ error };
+	}
+	catch (std::exception& ex) {
+		std::cerr << "Error: " << ex.what() << std::endl;
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
+}
+
+
 std::unordered_set<std::string> Crawler::GetHTMLLinks()
 {
 	std::ifstream fin(_HTMLContentFile);
+
+	if (!fin.is_open())
+	{
+		std::cout << "GetHTMLLinks: cannot open file" << std::endl;
+	}
+
 	std::string inputString;
 	std::getline(fin, inputString);
 	
@@ -166,7 +272,7 @@ std::unordered_set<std::string> Crawler::GetHTMLLinks()
 	}
 
 	if (_urls.size() == 0) {
-		std:: cout << "-1" << std::endl;
+		std:: cout << "GetHTMLLinks:: urlList is empty: -1" << std::endl;
 	}
 	fin.close();
 	return _urls;
@@ -181,19 +287,18 @@ int Crawler::GetURLCount(std::unordered_set<std::string>& urls)
 	return count;
 }
 
-void Crawler::ParseURL(const std::string& urlStr, URLComponents& urlFields)
+void Crawler::ParseURL(const std::string& urlStr, URLComponents* urlFields)
 {
-	std::lock_guard guard(rm);
 	size_t pos = urlStr.find(':');
-	urlFields.protocol = urlStr.substr(0, pos);
+	urlFields->protocol = urlStr.substr(0, pos);
 	
 	pos = urlStr.find('/');
 	std::string res = urlStr.substr(pos + 2);
-	urlFields.hostname = res.substr(0, res.find('/'));
-	urlFields.path = res.substr(res.find('/'), '/r/n');
+	urlFields->hostname = res.substr(0, res.find('/'));
+	urlFields->path = res.substr(res.find('/'), '/r/n');
 
-	urlFields.version = 11; //int version = argc == 5 && !std::strcmp("1.0", argv[4]) ? 10 : 11; (в функции main?)
-	_recursionDepth = _IniParser->GetRecursionDepth();
+	urlFields->version = 11; //int version = argc == 5 && !std::strcmp("1.0", argv[4]) ? 10 : 11; (в функции main?)
+	++_recursionCount;
 }
 
 void Crawler::PrintCertificate(ssl::verify_context& ctx)
@@ -206,7 +311,6 @@ void Crawler::PrintCertificate(ssl::verify_context& ctx)
 
 void Crawler::ReadStatusLineHandler(const boost::system::error_code& err)
 {
-	//std::lock_guard guard(rm);
 	std::cout << "READ STATUS LINE\n";
 	std::ifstream response_stream(_file);
 		std::string http_version;
@@ -237,9 +341,42 @@ void Crawler::ReadStatusLineHandler(const boost::system::error_code& err)
 	response_stream.close();
 }
 
+void Crawler::ReadStatusLineHandlerHTTP(const std::stringstream& buffer, const boost::system::error_code& err)
+{
+	std::cout << "READ STATUS LINE\n";
+	std::ifstream response_stream(_file);
+	std::string http_version;
+	http_version = buffer.str();
+	std::cout << "http_version: " << http_version << std::endl;
+	response_stream >> _statusCode;
+	std::string statusMsg;
+	std::getline(response_stream, statusMsg);
+
+	if (!response_stream || http_version.substr(0, 5) != "HTTP/") {
+		std::cerr << "Invalid response\n";
+		return;
+	}
+
+	if (_statusCode != 200) {
+		std::cerr << "Response returned with status_code = " << _statusCode << std::endl;
+		return;
+	}
+	std::cerr << "Status_code: " << _statusCode << std::endl;
+
+	if (err)
+	{
+		std::cout << "Error: " << err.message() << "\n";
+	}
+
+	//method to read headers
+	ReadHeaderHandler(err, response_stream);
+	SaveContent(err, response_stream);
+	response_stream.close();
+}
+
 void Crawler::ReadHeaderHandler(const boost::system::error_code& err, std::ifstream& response_stream)
 {
-	//std::lock_guard guard(rm);
+
 	std::cerr << "Read Headers...\n";
 	if (_statusCode == 200) {
 		std::string header;
@@ -286,7 +423,6 @@ std::string Crawler::DefineFileName(std::string& timeStr)
 	++count;
 	_HTMLContentFile = ".\\HTMLDownloaded\\HTMLContent_" + std::to_string(count) + "_" + timeStr + ".html";
 	return _HTMLContentFile;
-
 }
 
 std::string Crawler::GetDate()
@@ -296,6 +432,11 @@ std::string Crawler::GetDate()
 	std::stringstream timeStr;
 	timeStr << std::put_time(std::localtime(&time_t), "%Y-%m-%d-%H%m");
 	return timeStr.str();
+}
+
+int Crawler::GetCoresCount()
+{
+	return std::thread::hardware_concurrency();
 }
 
 void Crawler::CleanHTML(std::string& fileToClean)

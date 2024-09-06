@@ -32,10 +32,6 @@ void DataBaseManager::AddToDB(std::map<std::string, int>& words, const std::stri
 		CreateTable(conn, _wordsTableQuery);
 		CreateTable(conn, _docsTableQuery);
 		CreateTable(conn, _wordFrequency);
-
-		//TO_DO
-		//нужно добавить из Индексера слова, документ, частоту слов.
-		//ПРОВЕРИТЬ
 		
 		for (const auto& rows : words) {
 			InsertRow(conn, TableType::words, rows.first);
@@ -102,7 +98,7 @@ bool DataBaseManager::InsertRow(pqxx::connection& connection, TableType table, c
 		return true;
 	}
 	catch (std::exception& ex) {
-		std::cout << "INSERT ERROR: " << ex.what() << std::endl;
+		std::cout << "ERROR (INSERT INTO DB): " << ex.what() << std::endl;
 		return false;
 	}
 }

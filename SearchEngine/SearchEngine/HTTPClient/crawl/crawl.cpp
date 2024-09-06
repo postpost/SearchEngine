@@ -28,35 +28,6 @@ int main(int argc, char* argv[]) {
 	
 	//Crawler
 	Crawler crawler (iniFileName);
-	urls = crawler.GetHTMLLinks();
-
-	int depth = crawler.GetRecursionDepth();
-	int count = crawler.GetURLCount(urls);
-
-/*
----------------------------------*METHOD_01**START*----------------------------
-	if (count >= depth) {
-		for (auto itr = urls.begin(); depth>0; ++itr) {
-			threads.push_back(std::thread(&Crawler::DownloadURLs, &crawler, std::cref(*itr)));
-			--depth;
-		}
-
-	}
-	for (auto& thread : threads) {
-		thread.join();
-	}
----------------------------------*METHOD_01**END*----------------------------
-
-*/
-
-//-------------------------------- - *METHOD_02 * *START * ----------------------------
-//1. пусть кол-во потоков равно кол-ву глубины рекурсии?
-//2. потоки будут осуществлять задачи внутри объекта класса Crawler или здесь в main?
-//	 нужно ли тогда для каждого потока создавать свой io_context? 
-
-
-//-------------------------------- - *METHOD_02 * *END * ----------------------------
- 	
 	
 	std::string fileToClean = crawler.GetHTMLContentFileName();
 	crawler.CleanHTML(fileToClean);
