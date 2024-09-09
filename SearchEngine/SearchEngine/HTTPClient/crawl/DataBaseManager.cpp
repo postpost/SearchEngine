@@ -36,7 +36,7 @@ void DataBaseManager::AddToDB(std::map<std::string, int>& words, const std::stri
 		for (const auto& rows : words) {
 			InsertRow(conn, TableType::words, rows.first);
 			InsertRow(conn, TableType::docs, filePath);
-			InsertRow(conn, TableType::frequency, std::to_string(rows.second));
+			InsertRow(conn, TableType::frequency, std::to_string(rows.second)); //тут access violation, возможно нужен lock_guards
 		}
 	}
 
@@ -44,6 +44,41 @@ void DataBaseManager::AddToDB(std::map<std::string, int>& words, const std::stri
 		std::cout << "ERROR (CONNECTION TO DB): " << ex.what() << std::endl;
 		_connectionStatus = false;
 	}
+}
+
+bool DataBaseManager::RequestToDB(std::string& findWord)
+{
+	GetConnectionString();
+	try {
+		pqxx::connection conn(_connectionStr);
+		std::cout << "Connection to DB... SUCCESS" << std::endl;
+		_connectionStatus = true;
+
+		SendRequest(conn, findWord);
+	}
+	catch (std::exception& ex) {
+		std::cout << "Connection to DB failed. " << ex.what() << std::endl;
+	}
+
+	return _connectionStatus;
+}
+
+void DataBaseManager::SendRequest(pqxx::connection& conn, std::string& findWord)
+{
+	std::string query_word = "SELECT id, word from public.words WHERE word LIKE '" + findWord + "'";
+	pqxx::transaction tx(conn);
+	auto result = tx.query<int, std::string>(query_word);
+
+	for (auto& row : result) {
+		std::cout	<< "id: " << std::get<0>(row)
+					<< "word " << std::get<1>(row) << std::endl;
+	}
+
+	//std::string query = "SELECT word_id, doc_id, word_frequency from public.word_frequency WHERE firstName LIKE '" + findWord + "'";
+	//
+	//
+	//
+	tx.commit();
 }
 
 std::string DataBaseManager::GetConnectionString()
@@ -58,6 +93,7 @@ std::string DataBaseManager::GetConnectionString()
 		return _connectionStr;
 	}
 
+	return "Failed DataBaseManager::GetConnectionString()";
 	//std::cerr << _connectionStr << std::endl;
 }
 

@@ -4,8 +4,11 @@ set (PostgreSQL_ADDITIONAL_VERSIONS 16)
 
 project(crawl)
 
-set(SOURCES_FILE crawl.cpp Crawler.h Crawler.cpp Indexer.h Indexer.cpp IniParser.h IniParser.cpp)
-add_executable(${PROJECT_NAME} ${SOURCES_FILE} "DataBaseManager.h" "DataBaseManager.cpp")
+set(SOURCES_FILE crawl.cpp Crawler.h Crawler.cpp Indexer.h Indexer.cpp IniParser.h IniParser.cpp DataBaseManager.h DataBaseManager.cpp)
+add_executable(${PROJECT_NAME} ${SOURCES_FILE})
+file(GLOB ${PROJECT_NAME} IniParser.h IniParser.cpp DataBaseManager.h DataBaseManager.cpp)
+add_library(crawlerLib STATIC IniParser.h IniParser.cpp DataBaseManager.h DataBaseManager.cpp)
+
 
 #OpenSSL
 find_package(OpenSSL REQUIRED)
@@ -23,7 +26,7 @@ endif()
 
 
 #add files
-file(GLOB MY_FILES "*.txt" "*.ini") 
+file(GLOB MY_FILES "*.ini") 
 file(COPY ${MY_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY config.ini
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

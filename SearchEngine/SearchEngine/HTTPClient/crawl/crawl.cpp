@@ -22,20 +22,17 @@ int main(int argc, char* argv[]) {
 	SetConsoleOutputCP(CP_UTF8);
 
 	std::string iniFileName = "config.ini";
-	std::unordered_set<std::string> urls;
 
-	std::vector <std::thread> threads;
-	
 	//Crawler
 	Crawler crawler (iniFileName);
 	
-	std::string fileToClean = crawler.GetHTMLContentFileName();
-	crawler.CleanHTML(fileToClean);
-	crawler.SaveLowerCaseFile();
-	crawler.CountWords();
-	//crawler.PrintCountedWords();
+	//std::string fileToClean = crawler.GetHTMLContentFileName();
+	//crawler.CleanHTML(fileToClean);
+	//crawler.SaveLowerCaseFile();
+	//crawler.CountWords();
+	////crawler.PrintCountedWords();
 
-	crawler.AddToDB();
+	//crawler.AddToDB();
 	
 	return 0;
 }

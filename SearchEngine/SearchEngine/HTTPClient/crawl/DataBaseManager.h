@@ -2,6 +2,8 @@
 
 #include "IniParser.h"
 #include <pqxx/pqxx>
+#include <map>
+#include <pqxx/internal/gates/connection-errorhandler.hxx>
 
 enum class TableType {
 	words = 1,
@@ -12,8 +14,11 @@ enum class TableType {
 class DataBaseManager {
 public:
 	DataBaseManager(std::shared_ptr<IniParser> parser);
-	void AddToDB(std::map<std::string, int>& words, const std::string& filePath);
-	
+	void AddToDB(std::map <std::string, int>& words, const std::string& filePath);
+
+	//get data
+	bool RequestToDB(std::string& findWord);
+	void SendRequest(pqxx::connection& conn, std::string& findWord);
 
 private:
 	std::shared_ptr<IniParser> _parser;

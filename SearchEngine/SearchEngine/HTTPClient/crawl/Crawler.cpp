@@ -35,15 +35,19 @@ std::recursive_mutex rm;
 
 Crawler::Crawler(std::string fileName)
 {
+	//Parser initialization
+	_IniParser = std::make_shared<IniParser>(fileName);
+	
+	//Indexer initialization
+	_indexer = new Indexer(_IniParser);
+
 	//_self_regex = std::regex("<a href=\"(.*?)\"", std::regex_constants::ECMAScript | std::regex_constants::icase);
 	_self_regex = std::regex("\\b((?:https?|ftp|file):"
 							 "\\/\\/[a-zA-Z0-9+&@#\\/%?=~_|!:,.;]*"
 							 "[a-zA-Z0-9+&@#\\/%=~_|])", 
 							 std::regex_constants::ECMAScript | std::regex_constants::icase);
-
-	_IniParser = std::make_shared<IniParser>(fileName);
-	_IniParser->ParseIniFile();
 	
+	_IniParser->ParseIniFile();
 	_urlString =_IniParser->GetStartWebPage();
 	_recursionCount = 0;
 	_recursionDepth =_IniParser->GetRecursionDepth();
@@ -56,8 +60,6 @@ Crawler::Crawler(std::string fileName)
 		DownloadURLs(ioc);
 	}
 
-	//Indexer
-	_indexer = new Indexer(_IniParser);
 
 }
 
@@ -101,10 +103,15 @@ void Crawler::DownloadStartWeb(const std::string url, boost::asio::io_context& i
 {
 	URLComponents startWeb;
 	ParseURL(url, &startWeb);
-	if (startWeb.protocol == "https")
+	if (startWeb.protocol == "https") 
 		GetHTTPS(&startWeb, ioc);
 	else if (startWeb.protocol == "http")
 		GetHTTP(&startWeb, ioc);
+	
+	CleanHTML(GetHTMLContentFileName());
+	SaveLowerCaseFile();
+	CountWords();
+	//AddToDB();
 }
 
 void Crawler::HandleThreadPoolTask(const std::string& urlStr, URLComponents* urlFields, boost::asio::io_context& ioc)
@@ -116,6 +123,11 @@ void Crawler::HandleThreadPoolTask(const std::string& urlStr, URLComponents* url
 	else {
 		GetHTTP(urlFields, ioc);
 	}
+
+	CleanHTML(GetHTMLContentFileName());
+	SaveLowerCaseFile();
+	CountWords();
+	AddToDB();
 }
 
 int Crawler::GetHTTPS(URLComponents* urlFields, boost::asio::io_context& ioc)

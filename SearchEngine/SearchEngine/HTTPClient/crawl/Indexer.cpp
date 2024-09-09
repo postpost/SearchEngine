@@ -82,6 +82,11 @@ void Indexer::PrintCountedWords()
 
 void Indexer::AddToDataBase()
 {
+	if (_parser == nullptr) {
+		std::cout << "Indexer::AddToDataBase(): _PARSER == NULLPTR\n";
+		return;
+	}
+
 	_DBManager = new DataBaseManager(_parser);
 	_DBManager->AddToDB(_countedWords, _lowerCaseFile);
 }

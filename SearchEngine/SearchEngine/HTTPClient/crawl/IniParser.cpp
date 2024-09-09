@@ -31,6 +31,9 @@ void IniParser::ParseIniFile()
 				{
 					GetDataFromIni();
 				}
+				else if (line.find("HTTPServerData") != line.npos) {
+					GetDataFromIni();
+				}
 			}
 		}
 		else {
@@ -131,6 +134,10 @@ void IniParser::SaveDataFromFile(std::string& dataString)
 
 		else if (fieldName == "recursionDepth") {
 			dataToCrawl._recursionDepth = std::stoi(substring.substr(start + 1, end));
+		}
+
+		else if (fieldName == "serverPort") {
+			server._port = std::stoi(substring.substr(start + 1, end));
 		}
 
 		dataString.erase(0, (end +1));

@@ -19,8 +19,13 @@ struct CrawlerData {
 	int	_recursionDepth;
 };
 
+struct ServerData {
+	int _port;
+};
+
 class IniParser {
 public:
+	IniParser();
 	IniParser(std::string iniFileName);
 	~IniParser();
 	
@@ -34,6 +39,7 @@ public:
 	std::string GetPassword();
 	std::string GetStartWebPage();
 	int GetRecursionDepth();
+	int GetServerPort() { return server._port; };
 
 private:
 	//Fields
@@ -41,6 +47,7 @@ private:
 	std::ifstream _fileIn;
 	DatabaseConnection dataToConnect;
 	CrawlerData dataToCrawl;
+	ServerData server;
 
 private:
 	//Methods
