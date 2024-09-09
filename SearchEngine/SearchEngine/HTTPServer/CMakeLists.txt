@@ -8,7 +8,7 @@ add_executable(${PROJECT_NAME} main.cpp "Server.h" "Server.cpp")
 find_package(Boost 1.82.00 REQUIRED)
 
 #libpqxx
-#add_subdirectory("C:/Program Files/libpqxx-7.8.1" libpqxx-build)
+add_subdirectory("C:/Program Files/libpqxx-7.8.1" libpqxx-build)
 
 target_include_directories(${PROJECT_NAME}
 			PUBLIC
