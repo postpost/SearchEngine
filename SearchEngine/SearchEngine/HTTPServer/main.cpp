@@ -2,8 +2,6 @@
 #include <boost/asio.hpp>
 #include "Server.h"
 
-
-
 using namespace boost::asio;
 using ip::tcp;
 
@@ -21,7 +19,7 @@ void SendReplyToClient(tcp::socket& socket, const std::string& message) {
 
 int main() {
 
-	std::cout << "Hello, Server!" << std::endl;
+	std::cout << "what's up?" << std::endl;
 	//boost::asio::io_service io_service;
 
 	////listen for new connection, requested by a client
@@ -42,9 +40,9 @@ int main() {
 	//SendReplyToClient(socket, "Yikes! Hello from Server!");
 	//std::cout << "Server sent a reply to the client!\n";
 
-	Server server;
+	/*Server server;
 	std::string word = "analysis";
-	server.RequestToDB(word);
+	server.RequestToDB(word);*/
 
 	return 0;
 }

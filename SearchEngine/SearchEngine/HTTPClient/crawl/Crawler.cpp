@@ -301,14 +301,25 @@ int Crawler::GetURLCount(std::unordered_set<std::string>& urls)
 
 void Crawler::ParseURL(const std::string& urlStr, URLComponents* urlFields)
 {
-	size_t pos = urlStr.find(':');
-	urlFields->protocol = urlStr.substr(0, pos);
-	
-	pos = urlStr.find('/');
-	std::string res = urlStr.substr(pos + 2);
-	urlFields->hostname = res.substr(0, res.find('/'));
-	urlFields->path = res.substr(res.find('/'), '/r/n');
+	size_t pos = 0;
+	std::string res = "";
+	if (urlStr.find(':') != urlStr.npos) {
+		pos = urlStr.find(':');
+		urlFields->protocol = urlStr.substr(0, pos);
+	}
 
+	if (urlStr.find('/') != urlStr.npos) {
+		pos = urlStr.find('/');
+		res = urlStr.substr(pos + 2);
+		urlFields->hostname = res.substr(0, res.find('/'));
+	}
+	if (urlFields->path != "") {
+		urlFields->path = res.substr(res.find('/'), '/r/n'); //incorrect work!
+	}
+
+	urlFields->protocol = "https"; //check?
+	urlFields->hostname = urlStr.substr(0, res.find('\n'));
+	urlFields->path = "/";
 	urlFields->version = 11; //int version = argc == 5 && !std::strcmp("1.0", argv[4]) ? 10 : 11; (в функции main?)
 	++_recursionCount;
 }
@@ -465,7 +476,7 @@ void Crawler::CleanHTML(std::string& fileToClean)
 	_indexer->CleanText(result);
 }
 
-std::string Crawler::GetHTMLContentFileName()
+std::string& Crawler::GetHTMLContentFileName()
 {
 	return _HTMLContentFile;
 }

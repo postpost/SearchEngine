@@ -24,7 +24,7 @@ public:
 	int GetRecursionDepth() { return _recursionDepth; }
 	
 	void CleanHTML(std::string& fileToClean);
-	std::string GetHTMLContentFileName();
+	std::string& GetHTMLContentFileName();
 
 	void SaveLowerCaseFile();
 	void CountWords();

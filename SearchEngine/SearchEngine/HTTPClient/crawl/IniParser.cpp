@@ -23,6 +23,9 @@ void IniParser::ParseIniFile()
 				if (line[0] == ';' || line.empty()) {
 					continue;
 				}
+				if (line.find(';') != line.npos) {
+					RemoveComments(line);
+				}
 				if (line.find("DatabaseConnection") != line.npos) 
 				{
 					GetDataFromIni();
@@ -92,6 +95,18 @@ std::string IniParser::GetStartWebPage()
 int IniParser::GetRecursionDepth()
 {
 	return dataToCrawl._recursionDepth;
+}
+
+void IniParser::RemoveComments(std::string& str)
+{
+	for (int i = 0; i < str.length(); ++i) {
+		if (str[i] == ';') {
+			while (str.find('\n') != str.npos) {
+				str.erase(str[i], '\n');
+			}
+		}
+	}
+	std::cout << str << std::endl;
 }
 
 void IniParser::SaveDataFromFile(std::string& dataString)

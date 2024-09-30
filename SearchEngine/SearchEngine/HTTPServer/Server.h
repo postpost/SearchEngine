@@ -1,7 +1,9 @@
 #pragma once
 
+
 #include "..\HTTPClient\crawl\IniParser.h"
-#include "..\\HTTPClient\\crawl\DataBaseManager.h"
+#include "..\HTTPClient\crawl\DataBaseManager.h"
+
 
 class Server {
 public:

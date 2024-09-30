@@ -16,7 +16,7 @@
 
 using namespace boost::locale;
 
-int main(int argc, char* argv[]) {
+int main_01(int argc, char* argv[]) {
 	
 	SetConsoleCP(CP_UTF8);
 	SetConsoleOutputCP(CP_UTF8);
@@ -25,14 +25,6 @@ int main(int argc, char* argv[]) {
 
 	//Crawler
 	Crawler crawler (iniFileName);
-	
-	//std::string fileToClean = crawler.GetHTMLContentFileName();
-	//crawler.CleanHTML(fileToClean);
-	//crawler.SaveLowerCaseFile();
-	//crawler.CountWords();
-	////crawler.PrintCountedWords();
 
-	//crawler.AddToDB();
-	
 	return 0;
 }

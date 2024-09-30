@@ -3,11 +3,14 @@
 
 #include "SearchEngine.h"
 #include <iostream>
-#include <boost/asio.hpp>
-#include <boost/beast/core.hpp>
 
-int main(int argc, char* argv[])
+
+
+
+int main_(int argc, char* argv[])
 {
-	std::cout << "Hello SearchEngine." << std::endl;
+
+	std::cout << "Hello, Search Engine!" << std::endl;
+	
 	return 0;
 }

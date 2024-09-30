@@ -51,6 +51,7 @@ private:
 
 private:
 	//Methods
+	void RemoveComments(std::string& str);
 	void SaveDataFromFile(std::string& dataString);
 	void GetDataFromIni();
 };
